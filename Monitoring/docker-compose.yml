@@ -1,120 +1,95 @@
----
-version: "3.9"
+version: '3.9'
 services:
-  grafana:
-    container_name: grafana
-    image: grafana/grafana:latest
-    user: "0"
-    ports:
-      - "3000:3000"
+  pg-patroni-1:
+    hostname: pg-patroni
+    build:
+      context: .
+      dockerfile: Dockerfile-1
+    expose:
+      - 8008
+      - 5432
+    user: postgres
     volumes:
-      - grafana-data:/var/lib/grafana
-      
-  alertmanager:
-    image: prom/alertimage:latest
-    container_name: alertmanager
-    volumes:
-      - ./alertmanager.yml:/etc/alertmanager/config.yml
-    command:
-      - '--config.file=/etc/alertmanager/config.yml'
-      - '--storage.path=/alertmanager'
+      - postgres-data-1:/var/lib/postgresql/data
+    environment:
+      PATRONI_NAME: pg-patroni-1
+      PATRONI_POSTGRESQL_DATA_DIR: /var/lib/postgresql/data/node1
+      PATRONI_CONSUL_HOST: http://consul:8500
+      PATRONI_CONSUL_URL: http://consul:8500/v1/
+    networks:
+      baza:
+        ipv4_address: 10.5.0.5
     restart: unless-stopped
-    ports:
-      - 9093:9093
-      
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.46.0
-    container_name: cadvisor
-    ports:
-      - "8081:8080"
-    devices:
-      - "/dev/kmsg:/dev/kmsg"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-
-  loki:
-    container_name: loki
-    image: grafana/loki:main
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki-config.yml:/etc/loki/local-config.yaml
-      - loki-data:/data/loki
-    command: 
-      - '--config.file=/etc/loki/local-config.yaml'
-    
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
-
-  node-exporter-1:
-    image: prom/node-exporter:latest
-    container_name: node-exporter-1
-    restart: unless-stopped
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - "9100:9100"
-
-  node-exporter-2:
-    image: prom/node-exporter:latest
-    container_name: node-exporter-2
-    restart: unless-stopped
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-      
+  
   consul-1:
     image: consul
-    container_name: consul-1
+    hostname: consul
     volumes:
       - consul-data-1:/data
-      - ./consule-1.json:/consul/config/consul-1.json:ro
-      - ./service-1.json:/consul/config/service-1.json:ro
+      - ./consul-1.json:/consul/config/consul-1.json:ro
     ports:
       - "8500:8500"
+    networks:
+      baza:
+        ipv4_address: 10.5.0.6
     restart: unless-stopped
     command: agent -ui -bootstrap-expect 2 -retry-join consul-2 -server
 
+  pg-patroni-2:
+    hostname: pg-patroni
+    build:
+      context: .
+      dockerfile: Dockerfile-2
+    expose:
+      - 8008
+      - 5432
+    user: postgres
+    volumes:
+      - postgres-data-2:/var/lib/postgresql/data
+    environment:
+      PATRONI_NAME: pg-patroni-2
+      PATRONI_POSTGRESQL_DATA_DIR: /var/lib/postgresql/data/node1
+      PATRONI_CONSUL_HOST: http://consul:8500
+      PATRONI_CONSUL_URL: http://consul:8500/v1/
+    networks:
+      baza:
+        ipv4_address: 10.5.0.7
+    restart: unless-stopped
+  
   consul-2:
     image: consul
-    container_name: consul-2
+    hostname: consul
     volumes:
       - consul-data-2:/data
-      - ./consule-2.json:/consul/config/consul-2.json:ro
-      - ./service-2.json:/consul/config/service-2.json:ro
+      - ./consul-2.json:/consul/config/consul-2.json:ro
+    networks:
+      baza:
+        ipv4_address: 10.5.0.8
     restart: unless-stopped
     command: agent -ui -bootstrap-expect 2 -retry-join consul-1 -server
 
+  haproxy:
+    image: haproxy:alpine3.17
+    container_name: haproxy
+    ports:
+      - "7000:7000"
+      - "5000:5000"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      baza:
+        ipv4_address: 10.5.0.9
+
 volumes:
-  grafana-data:
-  prometheus-data:
-  loki-data:
+  postgres-data-1:
   consul-data-1:
+  postgres-data-2:
   consul-data-2:
+
+networks:
+  baza:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
