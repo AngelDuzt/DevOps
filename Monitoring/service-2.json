@@ -1,0 +1,17 @@
+{
+  "services": [
+    {
+      "name": "node_exporter",
+      "tags"" [
+        "node_exporter"
+      ],
+      "port": 9100,
+      "checks": [
+        {
+          "tcp": "node-exporter-2:9100",
+          "interval": "10s"
+        }
+      ]
+    }
+  ]
+}
