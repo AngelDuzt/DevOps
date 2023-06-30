@@ -60,9 +60,9 @@ services:
     ports:
       - 9090:9090
 
-  node-exporter:
+  node-exporter-1:
     image: prom/node-exporter:latest
-    container_name: node-exporter
+    container_name: node-exporter-1
     restart: unless-stopped
     volumes:
       - /proc:/host/proc:ro
@@ -75,6 +75,21 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     ports:
       - "9100:9100"
+
+  node-exporter-2:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-2
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      
   consul-1:
     image: consul
     container_name: consul-1
@@ -94,8 +109,6 @@ services:
       - consul-data-2:/data
       - ./consule-2.json:/consul/config/consul-2.json:ro
       - ./service-2.json:/consul/config/service-2.json:ro
-    ports:
-      - "8500:8500"
     restart: unless-stopped
     command: agent -ui -bootstrap-expect 2 -retry-join consul-1 -server
 
