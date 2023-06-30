@@ -37,6 +37,17 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     privileged: true
+
+  loki:
+    container_name: loki
+    image: grafana/loki:main
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/data/loki
+    command: 
+      - '--config.file=/etc/loki/local-config.yaml'
     
   prometheus:
     container_name: prometheus
@@ -68,3 +79,4 @@ services:
 volumes:
   grafana-data:
   prometheus-data:
+  loki-data:
