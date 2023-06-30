@@ -10,6 +10,18 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       
+  alertmanager:
+    image: prom/alertimage:latest
+    container_name: alertmanager
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/config.yml
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+    ports:
+      - 9093:9093
+      
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.46.0
     container_name: cadvisor
