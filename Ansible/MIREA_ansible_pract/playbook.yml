@@ -1,0 +1,9 @@
+---
+- name: Install jq packets to webservers
+  hosts: webservers
+  become: yes
+
+  tasks:
+  - name: Install jq
+    dnf:
+      name=jq state=present update_cache=yes

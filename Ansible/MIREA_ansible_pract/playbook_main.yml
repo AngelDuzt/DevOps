@@ -1,0 +1,22 @@
+---
+- name: Install and enable Nginx
+  hosts: webservers
+  become: yes
+
+  vars:
+    FIO: StokaIP IVBO-07-21 21
+
+  tasks:
+  - name: Install Nginx
+    dnf:
+      name=nginx state=present update_cache=yes
+    notify:
+      - Nginx Systemd
+
+  handlers:
+  - name: Nginx Systemd
+    systemd:
+      name: nginx
+      enabled: yes
+      state: started
+

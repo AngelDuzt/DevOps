@@ -1,0 +1,31 @@
+---
+- name: Test
+  hosts: all
+  become: yes
+
+  tasks:
+
+  - name: Create Groups
+    group:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - dev
+      - test
+
+  - name: Create User
+    user:
+      name: "{{ item.client_name }}"
+      shell: /bin/bash/
+      groups: test
+      append: yes
+      home: "/home/{{ item.home_dir }}"
+    with items:
+      - {client name: test, home dir: home dir test}
+
+  - name: Installing package
+    yum:
+      name:
+        - vim
+        - mc
+      state: latest

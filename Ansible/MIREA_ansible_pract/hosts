@@ -1,0 +1,5 @@
+[webservers]
+server-1 ansible_ssh_pass=john010903 ansible_host=192.168.11.120
+
+[webservers:vars]
+ansible_ssh_user=johnstoka
